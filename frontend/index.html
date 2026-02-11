@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能客服系统</title>
+    <meta name="description" content="AI驱动的智能客服协同平台">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <!-- ============================================================
+     登录页
+     ============================================================ -->
+    <div id="login-page" class="login-container">
+        <div class="login-card">
+            <h1>🤖 智能客服系统</h1>
+            <p class="subtitle">AI-Powered Customer Service Platform</p>
+            <form id="login-form" onsubmit="return handleLogin(event)">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" placeholder="请输入用户名" autocomplete="off" value="admin">
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" placeholder="请输入密码" value="123456">
+                </div>
+                <div class="form-group">
+                    <label for="login-entry">登录入口</label>
+                    <select id="login-entry">
+                        <option value="user">客服工作台（用户）</option>
+                        <option value="agent">坐席端</option>
+                        <option value="audit">质检中心</option>
+                        <option value="admin">管理员（全视图）</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">登 录</button>
+                <p id="login-error" class="login-error"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================
+     主应用布局
+     ============================================================ -->
+    <div id="app-layout" class="app-layout">
+        <!-- 顶部导航 -->
+        <header class="top-nav">
+            <div class="logo">
+                <span class="icon">🤖</span>
+                <span>智能客服系统</span>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-view="user" onclick="switchView('user')">💬 客服工作台</button>
+                <button class="nav-tab" data-view="agent" onclick="switchView('agent')">🎧 坐席端</button>
+                <button class="nav-tab" data-view="audit" onclick="switchView('audit')">✅ 质检中心</button>
+                <button class="nav-tab" data-view="knowledge" onclick="switchView('knowledge')">📚 知识库</button>
+            </div>
+            <div class="nav-right">
+                <div class="user-badge">
+                    <span class="avatar">A</span>
+                    <span id="current-user">admin</span>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()">退出</button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- ======== 用户端视图 ======== -->
+            <div id="view-user" class="view-panel" style="display: flex; flex: 1;">
+                <!-- 左侧: 历史会话 -->
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h3>💬 历史会话</h3>
+                        <button class="btn-new-chat" onclick="createNewChat()">+ 新对话</button>
+                    </div>
+                    <div id="user-ticket-list" class="sidebar-list">
+                        <!-- 动态填充 -->
+                    </div>
+                </div>
+                <!-- 中间: 聊天区域 -->
+                <div class="chat-area" id="user-chat-area">
+                    <div class="chat-header" id="user-chat-header" style="display: none;">
+                        <div class="ticket-info">
+                            <span class="ticket-id" id="user-ticket-id">工单 #--</span>
+                            <span class="ticket-status" id="user-ticket-status">--</span>
+                        </div>
+                        <div class="chat-actions">
+                            <button class="btn-action btn-transfer" id="btn-transfer" onclick="transferToHuman()">🔀
+                                转人工</button>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="user-chat-messages">
+                        <div class="chat-empty">
+                            <div class="empty-icon">💬</div>
+                            <p>点击「新对话」开始咨询</p>
+                            <p style="font-size: 12px;">AI 将为您提供智能解答</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area" id="user-input-area" style="display: none;">
+                        <div class="chat-input-wrapper">
+                            <textarea id="user-message-input" placeholder="输入您的问题..." rows="1"
+                                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendUserMessage();}"></textarea>
+                            <button class="btn-send" id="btn-send-user" onclick="sendUserMessage()">发送</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== 坐席端视图 (Phase 2) ======== -->
+            <div id="view-agent" class="view-panel" style="display: none; flex: 1;">
+                <!-- 左栏: 工单队列 -->
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h3>🎧 工单队列</h3>
+                    </div>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all"
+                            onclick="filterAgentTickets('all')">全部</button>
+                        <button class="filter-tab" data-filter="queued" onclick="filterAgentTickets('queued')">🔴
+                            待处理</button>
+                        <button class="filter-tab" data-filter="in_progress"
+                            onclick="filterAgentTickets('in_progress')">🟢 服务中</button>
+                        <button class="filter-tab" data-filter="resolved" onclick="filterAgentTickets('resolved')">⚪
+                            已完结</button>
+                    </div>
+                    <div id="agent-ticket-list" class="sidebar-list">
+                        <!-- 动态填充 -->
+                    </div>
+                </div>
+
+                <!-- 中栏: 坐席对话窗口 -->
+                <div class="chat-area" id="agent-chat-area">
+                    <div class="chat-header" id="agent-chat-header" style="display: none;">
+                        <div class="ticket-info">
+                            <span class="ticket-id" id="agent-ticket-id">工单 #--</span>
+                            <span class="ticket-status" id="agent-ticket-status">--</span>
+                            <span class="ticket-user-tag" id="agent-ticket-user"></span>
+                        </div>
+                        <div class="chat-actions">
+                            <button class="btn-action btn-pickup" id="btn-pickup" onclick="agentPickupTicket()"
+                                style="display:none;">📥 接入工单</button>
+                            <button class="btn-action btn-close-ticket" id="btn-close-ticket"
+                                onclick="agentCloseTicket()" style="display:none;">🔚 完结工单</button>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="agent-chat-messages">
+                        <div class="chat-empty">
+                            <div class="empty-icon">🎧</div>
+                            <p>选择左侧工单开始服务</p>
+                            <p style="font-size:12px;color:var(--text-muted);">红色标签为待接入工单</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area" id="agent-input-area" style="display: none;">
+                        <div class="chat-input-wrapper">
+                            <textarea id="agent-message-input" placeholder="输入回复内容..." rows="1"
+                                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAgentMessage();}"></textarea>
+                            <button class="btn-send" id="btn-send-agent" onclick="sendAgentMessage()">发送</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右栏: AI Copilot 辅助面板 -->
+                <div class="copilot-panel" id="copilot-panel">
+                    <div class="copilot-header">
+                        <h3>🧠 AI 辅助 (Copilot)</h3>
+                    </div>
+                    <div class="copilot-body">
+                        <!-- 智能建议区 -->
+                        <div class="copilot-section">
+                            <div class="copilot-section-title">💡 智能建议回复</div>
+                            <div id="copilot-suggestion" class="copilot-suggestion-box">
+                                <p class="copilot-placeholder">选择工单后，点击下方按钮生成 AI 建议回复</p>
+                            </div>
+                            <button class="btn-copilot-gen" id="btn-copilot-gen" onclick="generateCopilotSuggestion()"
+                                disabled>
+                                🤖 生成智能回复
+                            </button>
+                            <button class="btn-copilot-use" id="btn-copilot-use" onclick="useCopilotSuggestion()"
+                                style="display:none;">
+                                ✅ 采纳并填入
+                            </button>
+                        </div>
+                        <!-- 工单概况 -->
+                        <div class="copilot-section">
+                            <div class="copilot-section-title">📋 工单概况</div>
+                            <div id="copilot-ticket-info" class="copilot-info-box">
+                                <p class="copilot-placeholder">暂无工单信息</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== 质检端视图 (Phase 4 预留) ======== -->
+            <div id="view-audit" class="view-panel" style="display: none; flex: 1;">
+                <div class="audit-page">
+                    <div class="audit-left">
+                        <div class="knowledge-card">
+                            <h3>✅ 质检筛选</h3>
+                            <div class="audit-filters">
+                                <label>
+                                    状态
+                                    <select id="audit-filter-status" onchange="applyAuditFilters()">
+                                        <option value="all">全部</option>
+                                        <option value="resolved">未评分</option>
+                                        <option value="rated">已评分</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    评分
+                                    <select id="audit-filter-score" onchange="applyAuditFilters()">
+                                        <option value="all">全部</option>
+                                        <option value="unrated">仅未评分</option>
+                                        <option value="rated">仅已评分</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    时间
+                                    <select id="audit-filter-days" onchange="applyAuditFilters()">
+                                        <option value="all">全部时间</option>
+                                        <option value="7">近 7 天</option>
+                                        <option value="30">近 30 天</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="knowledge-card">
+                            <h3>📊 质检概览</h3>
+                            <div id="audit-stats" class="audit-stats">
+                                <p class="copilot-placeholder">暂无数据</p>
+                            </div>
+                        </div>
+                        <div class="audit-ticket-list-wrap">
+                            <div class="knowledge-list-header">
+                                <h3>🧾 工单列表</h3>
+                                <button class="btn-action" onclick="loadAuditTickets()">刷新</button>
+                            </div>
+                            <div id="audit-ticket-list" class="sidebar-list"></div>
+                        </div>
+                    </div>
+                    <div class="audit-right">
+                        <div class="chat-header">
+                            <div class="ticket-info">
+                                <span class="ticket-id" id="audit-detail-title">工单 #--</span>
+                                <span class="ticket-status" id="audit-detail-meta">请选择左侧工单</span>
+                            </div>
+                            <div class="chat-actions">
+                                <button class="btn-action" id="btn-audit-rate" onclick="openAuditRateModal()" disabled>
+                                    ⭐ 评分
+                                </button>
+                            </div>
+                        </div>
+                        <div id="audit-chat-messages" class="chat-messages">
+                            <div class="chat-empty">
+                                <div class="empty-icon">✅</div>
+                                <p>请选择左侧工单查看对话记录</p>
+                            </div>
+                        </div>
+                        <div class="knowledge-card audit-summary-card">
+                            <h3>📝 评分备注</h3>
+                            <div id="audit-summary-content" class="knowledge-item-a">暂无评分备注</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== 知识库视图 (Phase 3 预留) ======== -->
+            <div id="view-knowledge" class="view-panel" style="display: none; flex: 1;">
+                <div class="knowledge-page">
+                    <div class="knowledge-upload-panel">
+                        <div class="knowledge-card">
+                            <h3>📤 上传 Markdown</h3>
+                            <p class="knowledge-help">支持 .md 文档，上传后自动切片、向量化并生成 QA 对。</p>
+                            <input id="knowledge-file-input" class="knowledge-file-input" type="file"
+                                accept=".md,text/markdown" />
+                            <button id="btn-knowledge-upload" class="knowledge-upload-btn"
+                                onclick="uploadKnowledgeFile()">上传并入库</button>
+                            <div id="knowledge-upload-result" class="knowledge-upload-result"></div>
+                        </div>
+                        <div class="knowledge-card">
+                            <h3>📈 入库概览</h3>
+                            <div id="knowledge-summary" class="knowledge-summary">
+                                <p class="copilot-placeholder">暂无数据</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="knowledge-list-panel">
+                        <div class="knowledge-list-header">
+                            <h3>📚 知识库数据</h3>
+                            <button class="btn-action" onclick="loadKnowledgeData()">刷新</button>
+                        </div>
+                        <div class="knowledge-tabs">
+                            <button class="knowledge-tab active" data-kb-tab="docs"
+                                onclick="switchKnowledgeTab('docs')">文档切片</button>
+                            <button class="knowledge-tab" data-kb-tab="qa"
+                                onclick="switchKnowledgeTab('qa')">QA 对</button>
+                        </div>
+
+                        <div id="knowledge-sources" class="knowledge-sources">
+                            <p class="copilot-placeholder">暂无来源数据</p>
+                        </div>
+
+                        <div id="knowledge-docs-list" class="knowledge-list"></div>
+                        <div id="knowledge-qa-list" class="knowledge-list" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 质检评分弹窗 -->
+    <div id="audit-rate-modal" class="audit-rate-modal" style="display:none;">
+        <div class="audit-rate-dialog">
+            <h3 id="audit-rate-title">工单评分</h3>
+            <div class="audit-stars">
+                <button class="audit-star" data-score="1" onclick="setAuditRateScore(1)">★</button>
+                <button class="audit-star" data-score="2" onclick="setAuditRateScore(2)">★</button>
+                <button class="audit-star" data-score="3" onclick="setAuditRateScore(3)">★</button>
+                <button class="audit-star" data-score="4" onclick="setAuditRateScore(4)">★</button>
+                <button class="audit-star" data-score="5" onclick="setAuditRateScore(5)">★</button>
+            </div>
+            <textarea id="audit-rate-comment" placeholder="可填写质检备注（可选）" rows="4"></textarea>
+            <div class="audit-rate-actions">
+                <button class="btn-action" onclick="closeAuditRateModal()">取消</button>
+                <button class="btn-copilot-use" id="btn-submit-audit-rate" onclick="submitAuditRating()">提交评分</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

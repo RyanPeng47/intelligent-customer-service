@@ -1,0 +1,62 @@
+# PyCore Plugins 开发规范
+
+## Plugin 开发
+
+```python
+from pycore.plugins import BasePlugin, PluginResult
+from pycore.core import get_logger
+
+logger = get_logger()  # 模块级，BasePlugin 没有内置 logger
+
+class MyPlugin(BasePlugin):
+    name: str = "my_plugin"
+    description: str = "插件描述"
+
+    async def execute(self, param: str, **kwargs) -> PluginResult:
+        # **kwargs 必须保留
+        logger.info("Executing", param=param)
+        if error_condition:
+            return self.fail("错误信息")  # 方法名是 fail，不是 failure
+        return self.success(result_data)
+```
+
+## PluginResult 判断
+
+```python
+result = await plugins.execute("my_plugin", **args)
+if not result:  # 使用 __bool__ 判断，不要用 result.success
+    error_msg = result.error  # 失败时用 .error
+else:
+    data = result.output  # 成功时用 .output
+```
+
+## Plugin vs Service 使用边界
+
+**根据应用类型选择架构**：
+
+| 应用类型 | 架构选择 | 说明 |
+|---------|---------|------|
+| 普通业务系统（无 AI 功能）| Router → Service → Repository | 不需要 Plugin 层 |
+| AI Agent 应用（有对话/智能功能）| Router → Plugin → Service | Plugin 作为 LLM 可调用的工具 |
+
+### 什么时候用 Plugin
+- LLM 需要调用的工具（自动转换为 function calling 格式）
+- 功能单一、可复用、无状态
+- 例如：数据验证、密码加密、调用第三方API
+
+### 什么时候用 Service
+- 需要多步骤编排
+- 需要维护状态/上下文
+- 复杂业务流程
+- 例如：用户注册流程、订单处理流程
+
+## 错误处理规范（Plugin 内）
+
+```python
+# Plugin 内的业务逻辑错误使用 return self.fail()
+class PasswordValidator(BasePlugin):
+    async def execute(self, password: str, **kwargs):
+        if len(password) < 6:
+            return self.fail("密码长度不足")  # 业务错误
+        return self.success(True)
+```

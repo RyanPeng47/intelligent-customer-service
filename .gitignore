@@ -1,0 +1,25 @@
+# Secrets
+.env
+
+# Python virtual env and cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE/OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local agent/runtime artifacts
+.agent/
