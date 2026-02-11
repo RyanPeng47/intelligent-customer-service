@@ -1,113 +1,113 @@
-# Intelligent Customer Service System
+# 智能客服系统（Intelligent Customer Service System）
 
-An AI + human collaborative customer service demo built with FastAPI and a static frontend.
+一个基于 FastAPI + 静态前端的 AI 与人工协同客服演示项目。
 
-## What this project includes
+## 功能概览
 
-- User terminal:
-  - Chat with AI (`QA -> intent -> RAG`)
-  - Transfer to human agent
-  - View ticket history
-- Agent terminal:
-  - Ticket queue (`queued / in_progress / resolved`)
-  - Reply to users
-  - AI Copilot suggestion
-  - Close ticket
-- Knowledge base:
-  - Upload Markdown documents
-  - Auto chunk + embedding + QA generation
-  - View QA pairs and vector chunks
-- QA audit terminal:
-  - View resolved tickets
-  - Filter and review conversations
-  - Rate service quality
+- 用户端
+  - 与 AI 对话（`QA -> 意图识别 -> RAG`）
+  - 一键转人工
+  - 历史工单查看
+- 坐席端
+  - 工单队列（`queued / in_progress / resolved`）
+  - 回复用户
+  - AI Copilot 辅助回复
+  - 完结工单
+- 知识库
+  - 上传 Markdown 文档
+  - 自动切片、向量化、QA 生成
+  - 查看 QA 对与文档切片
+- 质检端
+  - 查看已完结工单
+  - 筛选和复盘对话
+  - 服务评分
 
-## Tech stack
+## 技术栈
 
-- Backend: FastAPI, SQLite, OpenAI-compatible API clients
-- Frontend: HTML/CSS/Vanilla JavaScript
-- AI:
-  - DeepSeek for chat/intent/copilot
-  - DashScope embedding model for vectorization (with local fallback)
+- 后端：FastAPI、SQLite、OpenAI 兼容客户端
+- 前端：HTML / CSS / Vanilla JavaScript
+- AI：
+  - DeepSeek（对话、意图识别、Copilot）
+  - DashScope Embedding（向量化，含本地回退策略）
 
-## Project structure
+## 目录结构
 
 ```text
-backend/                 FastAPI app and services
-frontend/                Static web UI
-scripts/                 Smoke test and cleanup scripts
-.output/dev-plan.md      Development and phase status
-.env.example             Environment variable template
+backend/                 FastAPI 后端与服务逻辑
+frontend/                静态前端页面
+scripts/                 冒烟测试与测试数据清理脚本
+.output/dev-plan.md      分阶段开发计划与状态
+.env.example             环境变量模板
 ```
 
-## Prerequisites
+## 环境要求
 
-- Python 3.10+ (recommended: 3.13)
-- Windows PowerShell (commands below use PowerShell syntax)
+- Python 3.10+（推荐 3.13）
+- Windows PowerShell（以下示例命令基于 PowerShell）
 
-## Quick start
+## 快速启动
 
-1. Create venv and install dependencies
+1. 创建虚拟环境并安装依赖
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\pip.exe install -r backend\requirements.txt
 ```
 
-2. Configure environment variables
+2. 配置环境变量
 
 ```powershell
 copy .env.example .env
 ```
 
-Edit `.env` and set:
+编辑 `.env`，至少配置：
 
 - `DEEPSEEK_API_KEY`
 - `DASHSCOPE_API_KEY`
 
-3. Start backend
+3. 启动后端
 
 ```powershell
 .venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-4. Open the app
+4. 打开系统
 
 - `http://127.0.0.1:8000/`
 
-## Test scripts
+## 测试脚本
 
-### 1) End-to-end smoke test
+### 1）全流程冒烟测试
 
-Runs login -> knowledge upload -> user chat -> transfer -> agent handling -> close -> audit rating.
+覆盖：登录 -> 知识库上传 -> 用户提问 -> 转人工 -> 坐席处理 -> 完结 -> 质检评分
 
 ```powershell
 .venv\Scripts\python.exe scripts\full_flow_smoke.py
 ```
 
-Expected: `OVERALL: PASS`
+预期结果：`OVERALL: PASS`
 
-### 2) Cleanup smoke data
+### 2）清理冒烟测试数据
 
-Preview only (dry-run):
+仅预览（dry-run）：
 
 ```powershell
 .venv\Scripts\python.exe scripts\cleanup_smoke_data.py
 ```
 
-Apply cleanup:
+执行清理：
 
 ```powershell
 .venv\Scripts\python.exe scripts\cleanup_smoke_data.py --apply
 ```
 
-## Main API endpoints
+## 主要接口
 
-### Auth
+### 登录
 
 - `POST /api/login`
 
-### User terminal
+### 用户端
 
 - `POST /api/chat`
 - `GET /api/tickets/history`
@@ -115,7 +115,7 @@ Apply cleanup:
 - `GET /api/messages/{ticket_id}`
 - `GET /api/messages/poll/{ticket_id}`
 
-### Agent terminal
+### 坐席端
 
 - `GET /api/agent/tickets`
 - `POST /api/agent/pickup`
@@ -123,18 +123,17 @@ Apply cleanup:
 - `POST /api/agent/close`
 - `POST /api/copilot/suggest`
 
-### Knowledge base
+### 知识库
 
 - `POST /api/knowledge/upload`
 - `GET /api/knowledge/list`
 
-### QA audit
+### 质检
 
 - `GET /api/admin/tickets/resolved`
 - `POST /api/admin/tickets/rate`
 
-## Notes
+## 说明
 
-- `.env`, `.venv`, and local databases (`*.db`) are excluded by `.gitignore`.
-- This project stores data in local SQLite (`customer_service.db`) by default.
-
+- `.env`、`.venv`、本地数据库文件（`*.db`）已在 `.gitignore` 中排除。
+- 默认使用本地 SQLite 数据库：`customer_service.db`。
